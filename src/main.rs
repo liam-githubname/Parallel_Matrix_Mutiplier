@@ -65,25 +65,25 @@ fn multiply_matrices(matrix1: Matrix, matrix2: Matrix) -> Matrix {
     let matrix1_arc = Arc::new(matrix1);
     let matrix2_arc = Arc::new(matrix2);
 
-    //NOTE: thread::available_parallelism() returns 12 on my machine
-    //NOTE: available_parallelism() -> NonZero<usize> but we need number_of_cores to be a usize
+    // NOTE: thread::available_parallelism() returns 12 on my machine
+    // NOTE: available_parallelism() -> NonZero<usize> but we need number_of_cores to be a usize
     let number_of_cores = thread::available_parallelism()
-        //NOTE: .map(|num| num.get()) maps a function to the Ok() value, this leaves Err() value
+        // NOTE: .map(|num| num.get()) maps a function to the Ok() value, this leaves Err() value
         //untouched
         .map(|num| num.get())
-        //NOTE: .unwrap_or() returns the Ok() value or a default value, right now it is 1 idk that should be
+        // NOTE: .unwrap_or() returns the Ok() value or a default value, right now it is 1 idk that should be
         //changed
         .unwrap_or(1);
 
-    //NOTE: I don't know if two threads per core is good or not just what was suggested
+    // NOTE: I don't know if two threads per core is good or not just what was suggested
     let number_of_threads = number_of_cores * 2;
-    //NOTE: "+ number_of_threads - 1" ensures that rows_per_thread will not be too small to contain all
+    // NOTE: "+ number_of_threads - 1" ensures that rows_per_thread will not be too small to contain all
     //rows
     let rows_per_thread =
         (matrix1_arc.num_of_rows as usize + number_of_threads - 1) / number_of_threads;
 
     //Share data between Threads
-    //NOTE: channel creates an asynchronous and returns the sender and receiver halves sender can
+    // NOTE: channel creates an asynchronous and returns the sender and receiver halves sender can
     //and will be copied for each thread, however the receiver can only have one instance
     let (sender, receiver) = mpsc::channel();
     //This is created to save references(JoinHandles) to thread handles
@@ -91,7 +91,7 @@ fn multiply_matrices(matrix1: Matrix, matrix2: Matrix) -> Matrix {
 
     //Thread Coordination
     for thread_id in 0..number_of_threads {
-        //NOTE: sender is being copied per thread, all clones must be closed for the receiver to be
+        // NOTE: sender is being copied per thread, all clones must be closed for the receiver to be
         //closed
         let sender = sender.clone();
         // each thread (thread_id) is given it's rows to work on here
@@ -102,13 +102,13 @@ fn multiply_matrices(matrix1: Matrix, matrix2: Matrix) -> Matrix {
             continue;
         }
 
-        //NOTE: Makes a clone of the `Arc` pointer. This creates another pointer to the same allocation, increasing the strong reference count.
+        // NOTE: Makes a clone of the `Arc` pointer. This creates another pointer to the same allocation, increasing the strong reference count.
         let matrix1_ref = Arc::clone(&matrix1_arc);
         let matrix2_ref = Arc::clone(&matrix2_arc);
 
         //Distributes the workload between threads
-        //NOTE: spawn() takes a closure, with contraints because threads can outlive their caller. The contraints have a 'static lifetime
-        //because the return can outlive the caller
+        // NOTE: spawn() takes a closure, with contraints because threads can outlive their caller. The contraints have a 'static lifetime
+        // because the return can outlive the caller
         // NOTE: Capture a [closure](https://doc.rust-lang.org/stable/book/ch13-01-closures.html)'s
         // environment by value. `move` converts any variables captured by reference or mutable reference to variables captured by value.
         let handle = thread::spawn(move || {
